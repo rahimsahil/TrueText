@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueText | Advanced AI Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <nav>
+            <div class="logo">True<span>Text</span></div>
+            <div class="tag">BCA Final Project 2026</div>
+        </nav>
+
+        <main>
+            <div class="input-section">
+                <h2>AI Text Detection System</h2>
+                <p>Analyze linguistic patterns and perplexity signatures to detect AI content.</p>
+                <textarea id="textInput" placeholder="Paste text here (min. 10 words)..."></textarea>
+                <button onclick="runAnalysis()" id="analyzeBtn">Run Deep Scan</button>
+            </div>
+
+            <div id="results" class="result-section hidden">
+                <div class="card-grid">
+                    <div class="card chart-card">
+                        <div class="circular-progress" id="progressCircle">
+                            <span id="aiValueDisplay">0%</span>
+                        </div>
+                        <p>AI Signature Probability</p>
+                    </div>
+                    
+                    <div class="card data-card">
+                        <div class="stat-row">
+                            <span>Perplexity Score:</span>
+                            <strong id="pplVal">0.00</strong>
+                        </div>
+                        <hr>
+                        <div class="stat-row">
+                            <span>Verdict:</span>
+                            <strong id="verdictText">---</strong>
+                        </div>
+                        <hr>
+                        <div class="stat-row">
+                            <span>Word Count:</span>
+                            <strong id="wordCount">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function runAnalysis() {
+            const textInput = document.getElementById('textInput').value;
+            const btn = document.getElementById('analyzeBtn');
+            const results = document.getElementById('results');
+            
+            if(!textInput || textInput.split(/\s+/).length < 10) {
+                alert("Please enter at least 10 words.");
+                return;
+            }
+
+            btn.innerText = "Analyzing...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: textInput })
+                });
+
+                const data = await response.json();
+                if(data.error) { alert(data.error); return; }
+
+                results.classList.remove('hidden');
+                
+                // Update Numeric Values
+                document.getElementById('aiValueDisplay').innerText = Math.round(data.ai_score) + "%";
+                document.getElementById('pplVal').innerText = data.perplexity;
+                document.getElementById('verdictText').innerText = data.verdict;
+                document.getElementById('wordCount').innerText = textInput.trim().split(/\s+/).length;
+
+                // Update Progress Circle (3.6 degrees per 1%)
+                const circle = document.getElementById('progressCircle');
+                circle.style.background = `conic-gradient(#6366f1 ${data.ai_score * 3.6}deg, #334155 0deg)`;
+
+                // Update Verdict Color
+                const vText = document.getElementById('verdictText');
+                vText.style.color = data.verdict.includes("AI") ? "#ff4d4d" : "#00ff88";
+
+            } catch (err) {
+                alert("Server error. Make sure app.py is running.");
+            } finally {
+                btn.innerText = "Run Deep Scan";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
